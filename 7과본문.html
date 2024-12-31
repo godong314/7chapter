@@ -1,0 +1,507 @@
+<html>
+<base href="https://example.com" />
+<head>
+    <meta charset="UTF-8">
+    <title>English Sentence Memorization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .sentence-pair {
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s, border-color 0.3s;
+            position: relative;
+        }
+        .sentence-pair:hover {
+            background: #f9f9f9;
+            border-color: #b3d4fc;
+        }
+        .selected {
+            background: #e0f7fa;
+            border-color: #00bcd4;
+        }
+        .english, .korean {
+            font-size: 1em;
+            color: #333333;
+            margin-bottom: 8px;
+        }
+        .korean {
+            font-weight: bold;
+            color: #555555;
+        }
+        .arrange-container {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px dashed #cccccc;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .shuffled-words, .arranged-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .word-group {
+            padding: 8px 12px;
+            background: #007bff;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            user-select: none;
+        }
+        .word-group:hover {
+            background: #0056b3;
+        }
+        .arranged-word {
+            padding: 8px 12px;
+            background: #f0f0f0;
+            color: #333333;
+            border: 2px solid #cccccc;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: border-color 0.3s, background 0.3s;
+            user-select: none;
+        }
+        .arranged-word.correct {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        .arranged-word.incorrect {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .pagination a {
+            text-decoration: none;
+            color: #ffffff;
+            background: #007bff;
+            padding: 10px 20px;
+            margin: 0 5px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .pagination a:hover {
+            background: #0056b3;
+        }
+        .page-number {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            color: #333333;
+        }
+        /* SVG Icon */
+        .icon {
+            width: 24px;
+            height: 24px;
+            vertical-align: middle;
+            margin-right: 8px;
+            animation: rotate 4s linear infinite;
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        /* New Styles for Controls */
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #ffffff;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: move;
+            z-index: 1000;
+        }
+        .controls button {
+            padding: 10px 20px;
+            background: #28a745;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+        .controls button:hover {
+            background: #218838;
+        }
+        .controls button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .controls select {
+            padding: 10px;
+            font-size: 1em;
+            border-radius: 5px;
+            border: 1px solid #ced4da;
+        }
+        /* Additional Styles for Word Arrange */
+        .arrange-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls" id="controls">
+        <button id="blank-btn">빈칸 만들기</button>
+        <button id="word-arrange-btn">단어 배열</button>
+    </div>
+    <div class="container">
+        <h1>📚 영어 문장 암기 사이트</h1>
+        <div id="sentence-container"></div>
+        <div class="pagination">
+            <a href="https://example.com/page1" id="prev-btn">이전 페이지</a>
+            <a href="https://example.com/page2" id="next-btn">다음 페이지</a>
+        </div>
+        <div class="page-number" id="page-number">페이지 1 / 1</div>
+    </div>
+
+    <script>
+        const sentences = [
+            { english: "My school's drama club is preparing Shakespeare's play The Merchant of Venice so that we can perform it at our school festival in August, and I have the best role: Portia.", korean: "나의 학교 연극 동아리는 8월에 학교 축제에서 공연하기 위해 셰익스피어의 연극 ‘베니스의 상인’을 준비 중이고, 나는 가장 좋은 역할인 Portia를 맡았다." },
+            { english: "Portia is one of the most significant female characters in Shakespeare's plays.", korean: "Portia는 셰익스피어의 희곡들 중 가장 두드러진 여성 등장인물들 중 하나이다." },
+            { english: "She isn't just some princess in a palace.", korean: "그녀는 단지 궁전에 있는 어떤 공주가 아니다." },
+            { english: "She runs off to Venice, pretends to be a lawyer, and saves the life of her husband's friend Antonio by arguing his case at a trial.", korean: "그녀는 베니스로 달려가 변호사인 척하면서 재판에서 그의 사건을 입증함으로써 남편 친구인 Antonio의 목숨을 구한다." },
+            { english: "Anyway, the more I practice the play, the more closely I seem to follow her path in Venice.", korean: "어쨌든, 내가 연극 연습을 더 많이 하면 할수록 나는 그녀의 베니스에서의 행로를 더 가까이 따라가는 것처럼 보인다." },
+            { english: "This year my parents are celebrating their 20th wedding anniversary.", korean: "올해 우리 부모님은 20번째 결혼기념일을 축하하실 것이다." },
+            { english: "This is why we have been planning to take a special family trip for several years.", korean: "이것이 우리가 몇 년 동안 특별한 가족 여행을 가려고 계획해 오고 있는 이유이다." },
+            { english: "Finally, with summer vacation about to start, we discussed travel destinations.", korean: "마침내, 여름 방학이 막 시작하려는 참에 우리는 여행 목적지를 의논했다." },
+            { english: "Naturally the first thing I suggested was Venice.", korean: "자연스럽게 내가 제안했던 첫 번째 것은 베니스였다." },
+            { english: "My younger sister and my parents were all excited about seeing the canals and gondolas, so they agreed right away.", korean: "나의 여동생과 부모님께서는 모두 운하들과 곤돌라들을 보는 것에 신이 나 있었고 그들은 바로 동의했다." },
+            { english: "I can't believe it!.", korean: "나는 그것을 믿을 수가 없다!." },
+            { english: "We're going to see the real Venice.", korean: "우리가 진짜 베니스를 보러 갈 것이다." },
+            { english: "It will be like the theater come to life!.", korean: "그것은 연극이 실제가 되는 것 같을 것이다!" },
+            { english: "Day 1.", korean: "첫째 날." },
+            { english: "This morning we flew into the airport and came to the island by water taxi.", korean: "오늘 아침 우리는 공항으로 비행기를 타고 갔고, 수상 택시를 타고 그 섬에 들어갔다." },
+            { english: "After the long flight, it was refreshing to travel across the water by boat.", korean: "긴 비행 후, 배를 타고 물을 가로질러 가는 것은 신선했다." },
+            { english: "Our driver even let my younger sister take a turn steering the boat, and she was thrilled!.", korean: "우리의 기사님은 심지어 내 여동생에게 배를 조정해 보는 것을 허락하셨고, 그녀는 신이 났다!" },
+            { english: "At last I stepped into Venice with a pounding heart, just like Portia.", korean: "마침내 나는 마치 Portia처럼 쿵쾅대는 가슴으로 베니스에 발을 디뎠다." },
+            { english: "The first thing that impressed me about the city was how colorful it was.", korean: "그 도시에 대해서 나를 감명시켰던 첫 번째 것은 바로 그 도시가 얼마나 화려한지였다." },
+            { english: "The walls were covered with bright blues, greens, oranges and every other color.", korean: "벽들은 밝은 파란색과 초록색, 오렌지색, 모든 다른 색들로 덮여 있었다." },
+            { english: "We stayed at a building that used to be a palace hundreds of years ago.", korean: "우리는 수백 년 전에 궁전이었던 건물에 머물렀다." },
+            { english: "It was a home turned into a bed-and-breakfast and was run by a very sweet old lady.", korean: "그것은 아침식사를 제공하는 민박집으로 바뀌었고, 한 친절한 할머니에 의해 운영되었다." },
+            { english: "The lady told us a lot about the palace and the area as well.", korean: "할머니께서는 우리에게 궁전과 그 지역에 대해 많은 것을 또한 말씀해 주셨다." },
+            { english: "By the time we were ready for dinner, I was extremely hungry.", korean: "저녁을 먹을 준비가 되었을 때쯤 나는 매우 배가 고팠다." },
+            { english: "I'm glad I was so hungry because we went to Dalla Marisa, a traditional Italian restaurant.", korean: "나는 우리가 전통 이태리 식당인 Dalla Marisa로 갔기 때문에 배가 무척 고팠다는 것이 기뻤다." },
+            { english: "There are no menus at the restaurant.", korean: "그 식당에는 메뉴가 없다." },
+            { english: "The guests simply eat whatever Marisa is cooking that day.", korean: "손님들은 단지 Marisa가 그날 요리한 것을 먹는다." },
+            { english: "Since it was Tuesday, we had fresh fish with bread and salad.", korean: "그날이 화요일이었기 때문에, 우리는 빵과 샐러드와 함께 신선한 생선요리를 먹었다." },
+            { english: "There was far more than I could eat, but it was all delicious.", korean: "내가 먹을 수 있는 것보다 훨씬 많았지만 모두 맛있었다." },
+            { english: "Day 2.", korean: "둘째 날." },
+            { english: "My mother said, \"You can't say you have been to Venice unless you have ridden a gondola,\" so we all climbed into one of the famous boats.", korean: "엄마는 “너희는 곤돌라를 타보지 않고서, 베니스를 방문했다고 할 수 없어.”라고 말씀하셨다. 그래서 우리는 모두 그 유명한 배들 중 하나에 올라탔다." },
+            { english: "Our gondolier sang 'O Sole Mio' as the boat floated down a canal, and his powerful voice sounded nearly professional.", korean: "우리의 곤돌라 사공은 배가 운하를 따라 흘러 내려갈 때 O Sole Mio를 불렀다. 그리고 그의 힘 있는 목소리는 거의 전문가처럼 들렸다." },
+            { english: "After the gondola ride, we took another boat to the Island of Murano, which is famous for its glass-blowers.", korean: "곤돌라 탑승 후, 우리는 또 다른 배를 타고 Murano 섬에 갔는데, 그곳은 유리를 부는 사람들로 유명하다." },
+            { english: "We visited a glass factory and watched an artist melt glass in a very hot oven.", korean: "우리는 유리 공장을 방문했고, 한 예술가가 매우 뜨거운 오븐에서 유리를 녹이는 것을 보았다." },
+            { english: "I couldn't believe how he was able to make the hot lump of glass into an elegant horse with just a few skillful movements of his tools.", korean: "나는 그가 어떻게 그의 도구들의 단지 몇 번의 숙련된 움직임으로 그 뜨거운 유리 덩어리를 우아한 말로 만들 수 있는지 믿을 수 없었다." },
+            { english: "Another thing we had to see while in Venice was the mask shops.", korean: "우리가 베니스에 있는 동안 보아야 할 다른 것은 바로 가면 가게들이다." },
+            { english: "Like glass-blowing, the craft of mask-making has been considered an art in Venice for hundreds of years.", korean: "유리 불기처럼 가면을 만드는 기술은 베니스에서 수백 년 동안 예술로 여겨져 왔다." },
+            { english: "Our trip to the mask shop did not disappoint us.", korean: "우리의 가면 가게로의 여행은 우리를 실망시키지 않았다." },
+            { english: "There were dozens of masks in all different colors and designs.", korean: "수십 개의 가면들이 모든 서로 다른 색깔과 모양들로 있었다." },
+            { english: "My father said, \"Why don't you pick out a mask to take home? It would be a great souvenir\".", korean: "아버지가 “집으로 가져갈 가면을 하나 고르지 그러니? 그것은 멋진 기념품이 될 거야.”라고 말씀하셨다." },
+            { english: "So my sister picked a green mask with a long nose, and I chose a mask with gold patterns around the eyes.", korean: "그래서 여동생은 긴 코가 달린 초록색 가면을 골랐고, 나는 눈가에 금으로 된 모양이 있는 가면을 골랐다." },
+            { english: "When I put the mask on, I felt like I was the character Portia, hiding her identity, ready to save the day.", korean: "내가 가면을 썼을 때 나는 내가 궁지를 벗어날 준비가 된, 신분을 숨긴 Portia가 된 것 같은 기분이 들었다." },
+            { english: "Day 3.", korean: "셋째 날." },
+            { english: "On the third day, we took a tour of the city with a tour guide named Piero.", korean: "세 번째 날, 우리는 Piero라고 불리는 관광 가이드와 함께 도시 여행을 했다." },
+            { english: "We started in St. Mark's Square, the cultural center of Venice.", korean: "우리는 베니스의 문화 중심인 St. Mark's 광장에서 시작했다." },
+            { english: "From there, we could see St. Mark's Basilica, a huge cathedral, holding hundreds of dazzling mosaics and fantastic works of art.", korean: "거기서부터 우리는 수백 점의 눈부신 모자이크와 환상적인 예술 작품들을 지닌 거대한 성당인 St. Mark's Basilica를 볼 수 있었다." },
+            { english: "Right next to St Mark's Basilica is Doge's Palace, and we went inside.", korean: "St. Mark's Basilica 바로 옆에는 Doge's Palace가 있고, 우리는 그 안으로 들어갔다." },
+            { english: "One of the most impressive rooms was the Four Doors Room.", korean: "가장 인상적인 방들 중 하나는 Four Doors Room이었다." },
+            { english: "It was filled with paintings of Greek and Roman myths.", korean: "그것은 그리스와 로마의 신화들의 그림들로 채워져 있었다." },
+            { english: "My favorite painting was Neptune Offering Gifts to Venice, which shows the mythological god of the sea, Neptune, giving treasures of the sea to the city of Venice.", korean: "내가 좋아하는 그림은 Neptune Offering Gifts to Venice이었는데, 그것은 바다의 보물들을 베니스에게 주는 바다의 신화의 신인 Neptune을 보여 준다." },
+            { english: "Then our tour guide took us to the Compass Room.", korean: "그 다음, 우리의 관광 가이드는 우리를 Compass Room으로 데려갔다." },
+            { english: "When he explained that this was where trials were held long ago, I could imagine myself as Portia entering the Compass Room to defend 'the merchant of Venice'.", korean: "그가 이곳이 오래 전에 재판이 열렸던 곳이라고 설명했을 때, 나는 내 자신을 ‘베니스의 상인’을 옹호하기 위해 Compass Room으로 들어오는 Portia가 된 것처럼 상상할 수 있었다." },
+            { english: "PORTIA: A pound of that merchant's flesh is yours.", korean: "PORTIA: 1파운드의 저 상인의 살은 당신의 것이요." },
+            { english: "SHYLOCK: Most rightful judge!.", korean: "SHYLOCK: 가장 합법적이십니다, 판사님!." },
+            { english: "PORTIA: Wait a minute. There is something else.", korean: "PORTIA: 잠깐만요. 다른 게 더 있소." },
+            { english: "This contract gives you not a drop of blood.", korean: "이 계약서는 당신에게 한 방울의 피도 주고 있지 않소." },
+            { english: "It only gives 'a pound of flesh'.", korean: "그것은 단지 ‘1파운드의 살’만 주고 있소." },
+            { english: "If you spill one drop of blood, Then by the laws of Venice, You will lose everything you have.", korean: "당신이 피 한 방울이라도 흘린다면 베니스의 법에 의해 당신은 당신이 가진 모든 것을 잃을 것이요." },
+            { english: "SHYLOCK: Is that the law?.", korean: "SHYLOCK: 그게 법인가요?." },
+            { english: "When we walked out of the Compass Room and across the Bridge of Sighs, we could see the charming canal that flows under the bridge, leading to the prison.", korean: "우리가 Compass Room 밖으로 걸어 나와서 Bridge of Sighs를 건널 때 우리는 다리 아래를 흘러 감옥으로 가는 멋진 운하를 볼 수 있었다." },
+            { english: "On our way back to the bed-and-breakfast, our tour guide told us, \"Venice was built on wet and muddy land by people who were trying to escape from armies from the north and east\".", korean: "우리가 민박집으로 돌아오는 길에 우리의 관광 안내원은 우리에게 “베니스는 북쪽과 동쪽으로부터의 군대로부터 탈출하기 위해 노력했던 사람들에 의해 축축하고 진흙투성이의 땅 위에 지어졌어요.”라고 말했다." },
+            { english: "When I heard that, I was quite surprised.", korean: "내가 그것을 들었을 때 나는 무척 놀랐다." },
+            { english: "Who would have thought that this city, born from tears and suffering, would turn into a place of such great beauty?.", korean: "이 도시가 눈물과 고통으로부터 탄생해서 그렇게 멋진 아름다운 곳으로 변할지 그 누가 생각했겠는가?." },
+            { english: "Day 4.", korean: "넷째 날." },
+            { english: "I'm writing on the airplane, on my way home.", korean: "나는 집에 오는 길에 비행기에서 쓰고 있는 중이다." },
+            { english: "As I look down at Venice from the sky and see the canals, I realize that this city is one of a kind.", korean: "하늘에서 베니스를 내려다보고 운하를 보면서 나는 이 도시가 독특하다는 것을 깨달았다." },
+            { english: "Now that I have seen the actual city, I'm even more excited about acting in Shakespeare's play.", korean: "이제 실제 도시를 보았기에 나는 셰익스피어의 연극에서 공연한다는 사실에 더 흥분해 있다." },
+            { english: "Our trip to Venice was short, and it's already time to say goodbye.", korean: "우리의 베니스로의 여행은 짧았고 벌써 작별 인사를 할 시간이 되었다." },
+            { english: "However, I will treasure these memories forever.", korean: "하지만, 나는 이 기억들을 영원히 소중하게 간직할 것이다." }
+        ];
+
+        let currentPage = 1;
+        const sentencesPerPage = 80;
+        const totalPages = Math.ceil(sentences.length / sentencesPerPage);
+
+        const sentenceContainer = document.getElementById('sentence-container');
+        const pageNumber = document.getElementById('page-number');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const blankBtn = document.getElementById('blank-btn');
+        const wordArrangeBtn = document.getElementById('word-arrange-btn');
+
+        function renderPage(page) {
+            sentenceContainer.innerHTML = '';
+            const start = (page - 1) * sentencesPerPage;
+            const end = start + sentencesPerPage;
+            const pageSentences = sentences.slice(start, end);
+
+            pageSentences.forEach((pair, index) => {
+                const pairDiv = document.createElement('div');
+                pairDiv.classList.add('sentence-pair');
+                pairDiv.setAttribute('data-index', start + index);
+                pairDiv.innerHTML = `
+                    <div class="english">${pair.english}</div>
+                    <div class="korean">${pair.korean}</div>
+                `;
+                pairDiv.addEventListener('click', () => {
+                    pairDiv.classList.toggle('selected');
+                });
+                sentenceContainer.appendChild(pairDiv);
+            });
+
+            pageNumber.textContent = `페이지 ${page} / ${totalPages}`;
+            prevBtn.style.display = page === 1 ? 'none' : 'inline-block';
+            nextBtn.style.display = page === totalPages ? 'none' : 'inline-block';
+        }
+
+        prevBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (currentPage > 1) {
+                currentPage--;
+                renderPage(currentPage);
+            }
+        });
+
+        nextBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderPage(currentPage);
+            }
+        });
+
+        // Function to create blanks based on rules
+        function createBlanks(sentence) {
+            const words = sentence.split(/(\s+)/);
+            let result = '';
+            let consecutiveOmissions = 0;
+
+            for (let i = 0; i < words.length; i++) {
+                const word = words[i];
+                // Check if the word is eligible for omission
+                if (
+                    /[A-Za-z]/.test(word) && // Contains letters
+                    !/^\d+$/.test(word) && // Not a number
+                    !/[0-9]/.test(word) && // Does not contain numbers
+                    !/^[A-Z]/.test(word) // Does not start with uppercase
+                ) {
+                    if (consecutiveOmissions < 2 && Math.random() < 0.3) { // Probability to omit
+                        const cleanedWord = word.replace(/[^A-Za-z]/g, '');
+                        if (cleanedWord.length > 0) {
+                            result += `(${ '_'.repeat(cleanedWord.length) })`;
+                            consecutiveOmissions++;
+                            continue;
+                        }
+                    }
+                }
+                consecutiveOmissions = 0;
+                result += word;
+            }
+            return result;
+        }
+
+        blankBtn.addEventListener('click', () => {
+            const selectedPairs = document.querySelectorAll('.sentence-pair.selected');
+            selectedPairs.forEach(pair => {
+                const index = pair.getAttribute('data-index');
+                const originalEnglish = sentences[index].english;
+                const blanksEnglish = createBlanks(originalEnglish);
+                pair.querySelector('.english').textContent = blanksEnglish;
+            });
+        });
+
+        wordArrangeBtn.addEventListener('click', () => {
+            const selectedPairs = document.querySelectorAll('.sentence-pair.selected');
+            selectedPairs.forEach(pair => {
+                const index = pair.getAttribute('data-index');
+                // Prevent multiple arrangements
+                if (pair.querySelector('.arrange-container')) return;
+
+                const originalEnglish = sentences[index].english;
+                const koreanText = sentences[index].korean;
+
+                // Remove the English sentence
+                pair.querySelector('.english').remove();
+
+                // Split English sentence into 2-3 word groups
+                const wordGroups = splitIntoGroups(originalEnglish, 2, 3);
+                const shuffledGroups = shuffleArray(wordGroups);
+
+                // Create arrange UI
+                const arrangeContainer = document.createElement('div');
+                arrangeContainer.classList.add('arrange-container');
+
+                const arrangeHeader = document.createElement('div');
+                arrangeHeader.classList.add('arrange-header');
+                arrangeHeader.textContent = "Arrange the words in the correct order:";
+                arrangeContainer.appendChild(arrangeHeader);
+
+                const shuffledWordsDiv = document.createElement('div');
+                shuffledWordsDiv.classList.add('shuffled-words');
+                arrangeContainer.appendChild(shuffledWordsDiv);
+
+                const arrangedWordsDiv = document.createElement('div');
+                arrangedWordsDiv.classList.add('arranged-words');
+                arrangeContainer.appendChild(arrangedWordsDiv);
+
+                const koreanDiv = document.createElement('div');
+                koreanDiv.classList.add('korean');
+                koreanDiv.textContent = koreanText;
+                arrangeContainer.appendChild(koreanDiv);
+
+                shuffledGroups.forEach((group, idx) => {
+                    const wordBtn = document.createElement('button');
+                    wordBtn.classList.add('word-group');
+                    wordBtn.textContent = group;
+                    wordBtn.setAttribute('data-group', group);
+                    wordBtn.addEventListener('click', () => {
+                        if (arrangedWordsDiv.childElementCount >= wordGroups.length) return;
+                        const arrangedWord = document.createElement('div');
+                        arrangedWord.classList.add('arranged-word');
+                        arrangedWord.textContent = group;
+                        arrangedWord.setAttribute('data-group', group);
+                        arrangedWord.addEventListener('click', () => {
+                            // Remove from arranged area
+                            arrangedWordsDiv.removeChild(arrangedWord);
+                            // Remove status classes
+                            arrangedWord.classList.remove('correct', 'incorrect');
+                            // Re-enable the shuffled word button
+                            wordBtn.style.display = 'inline-block';
+                            // Re-check arrangement
+                            checkArrangement(arrangedWordsDiv, wordGroups);
+                        });
+                        arrangedWordsDiv.appendChild(arrangedWord);
+                        // Hide the word button after arranging
+                        wordBtn.style.display = 'none';
+                        // Check correctness
+                        checkArrangement(arrangedWordsDiv, wordGroups);
+                    });
+                    shuffledWordsDiv.appendChild(wordBtn);
+                });
+
+                pair.appendChild(arrangeContainer);
+            });
+        });
+
+        // Function to split sentence into 2-3 word groups
+        function splitIntoGroups(sentence, minWords, maxWords) {
+            const words = sentence.match(/[^\s]+/g);
+            const groups = [];
+            let i = 0;
+            while (i < words.length) {
+                const remaining = words.length - i;
+                if (remaining < minWords) {
+                    // If not enough words left, add them all as a group
+                    groups.push(words.slice(i).join(' '));
+                    break;
+                }
+                const groupSize = Math.min(Math.floor(Math.random() * (maxWords - minWords + 1)) + minWords, remaining);
+                const group = words.slice(i, i + groupSize).join(' ');
+                groups.push(group);
+                i += groupSize;
+            }
+            return groups;
+        }
+
+        // Fisher-Yates Shuffle
+        function shuffleArray(array) {
+            const arr = array.slice();
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // Function to check arrangement
+        function checkArrangement(arrangedDiv, originalGroups) {
+            const arranged = Array.from(arrangedDiv.children).map(child => child.getAttribute('data-group'));
+            arrangedDiv.childNodes.forEach((child, idx) => {
+                if (child.getAttribute('data-group') === originalGroups[idx]) {
+                    child.classList.add('correct');
+                    child.classList.remove('incorrect');
+                } else {
+                    child.classList.add('incorrect');
+                    child.classList.remove('correct');
+                }
+            });
+        }
+
+        // Initial render
+        renderPage(currentPage);
+
+        // Drag functionality for controls
+        const controls = document.getElementById('controls');
+        let isDragging = false;
+        let offsetX, offsetY;
+
+        controls.addEventListener('mousedown', (e) => {
+            if (e.target.tagName.toLowerCase() === 'button') return; // Prevent dragging when clicking buttons
+            isDragging = true;
+            offsetX = e.clientX - controls.offsetLeft;
+            offsetY = e.clientY - controls.offsetTop;
+            controls.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                controls.style.left = `${e.clientX - offsetX}px`;
+                controls.style.top = `${e.clientY - offsetY}px`;
+                controls.style.right = 'auto';
+                controls.style.bottom = 'auto';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                controls.style.cursor = 'move';
+            }
+        });
+    </script>
+</body>
+</html>
